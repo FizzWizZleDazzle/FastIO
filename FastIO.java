@@ -756,47 +756,4 @@ public static class FastIO implements AutoCloseable {
             }
         }
     }
-
-    // Template main method for USACO
-    public static void main(String[] args) {
-        try (FastIO io = new FastIO()) {
-            // USACO file I/O template
-            if (args.length > 0) {
-                try {
-                    System.setIn(new FileInputStream(args[0] + ".in"));
-                    System.setOut(new PrintStream(args[0] + ".out"));
-                } catch (IOException e) {
-                    System.err.println("Failed to set up file I/O: " + e.getMessage());
-                }
-            }
-
-            // Your solution code here
-            solve(io);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    // Template solve method
-    public static void solve(FastIO io) {
-        // Example: Read number of test cases
-        int t = io.nextInt();
-
-        while (t-- > 0) {
-            // Example: Read array size and array
-            int n = io.nextInt();
-            int[] arr = io.nextIntArray(n);
-
-            // Your solution logic here
-            long sum = 0;
-            for (int x : arr) {
-                sum += x;
-            }
-
-            io.println(sum);
-        }
-
-        io.flush();
-    }
 }
