@@ -40,6 +40,8 @@ public class Solution {
         // Output
         f.println("Result: " + (n + m));
         System.out.println(Arrays.toString(arr));
+        f.printArray(arr); // Same as above but faster in most cases
+        f.print2DArray(matrix);
 
         f.close();
     }
