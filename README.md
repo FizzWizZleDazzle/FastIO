@@ -39,6 +39,8 @@ public class Solution {
         
         // Output
         f.println("Result: " + (n + m));
+        System.out.println(Arrays.toString(arr));
+
         f.close();
     }
 }
@@ -92,7 +94,7 @@ Many competitive programming platforms, including USACO, only accept a single fi
 2. Make sure it's placed outside of your main class
 3. Remove any import statements that are already in your solution file
 
-See `example.java` for a demonstration of how to include FastIO in a single file solution. This approach ensures your solution is self-contained and can be submitted to platforms that restrict submissions to a single file.
+See `Example.java` for a demonstration of how to include FastIO in a single file solution. This approach ensures your solution is self-contained and can be submitted to platforms that restrict submissions to a single file.
 
 ## Debugging
 
