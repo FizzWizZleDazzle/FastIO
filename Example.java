@@ -12,7 +12,7 @@ public class Example {
     public static void main(String[] args) {
         if (System.getenv("TEST_MODE") != null && System.getenv("TEST_MODE").equals("true")){
             System.out.println(Test.testFunction(
-                Enki::enki,
+                Example::enki,
                 "example", // I forgot what the test case were, so I just put "example"
                 "example"
             ));
@@ -39,7 +39,7 @@ public class Example {
         visited.set(q, true);
 
         while (!stack.isEmpty()) {
-            int j = stack.removeLast();
+            int j = stack.remove(stack.size() - 1);
 
             if (j > 0 && !visited.get(j - 1) && h.get(j - 1) >= h.get(j)) {
                 visited.set(j - 1, true);

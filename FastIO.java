@@ -9,7 +9,7 @@ import java.math.BigInteger;
  * Features: Async I/O, Variable-size arrays, Mathematical utilities,
  * Memory optimization, Thread safety, Error recovery
  */
-public static class FastIO implements AutoCloseable {
+public class FastIO implements AutoCloseable {
     private final BufferedReader br;
     private StringTokenizer st;
     private final PrintWriter pw;
