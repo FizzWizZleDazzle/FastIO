@@ -5,7 +5,7 @@ import java.util.*;
  * Starter template for USACO problems using FastIO
  * Simply copy this template and implement your solution in the solve() method.
  */
-public class TestProblem {
+public class Demo {
     
     public static void main(String[] args) {
         // Enable testing mode by setting TEST_MODE environment variable
@@ -19,7 +19,7 @@ public class TestProblem {
             
             // Run with test input/output files
             System.out.println(Test.testFunction(
-                TestProblem::solve,
+                Demo::solve,
                 inputFile,
                 outputFile
             ));
