@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# FastIO Cross-Platform Utility for Unix/Linux/macOS
+# This script provides Unix support for FastIO utilities
+
+# Check if Java is available
+if ! command -v java &> /dev/null; then
+    echo "Error: Java not found. Please install Java JDK."
+    exit 1
+fi
+
+# Compile FastIOUtil if needed
+if [ ! -f "utils/FastIOUtil.class" ]; then
+    echo "Compiling FastIOUtil..."
+    javac utils/FastIOUtil.java
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to compile FastIOUtil.java"
+        exit 1
+    fi
+fi
+
+# Add utils to classpath and run FastIOUtil
+cd utils
+java FastIOUtil "$@"
+cd ..
