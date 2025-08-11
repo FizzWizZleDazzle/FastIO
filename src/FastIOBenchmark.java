@@ -161,7 +161,7 @@ public class FastIOBenchmark {
         
         long originalTime = timeOperation(() -> {
             try {
-                return testFastIOOriginalMultiple(inputFile, "output1.txt");
+                testFastIOOriginalMultiple(inputFile, "output1.txt");
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -169,7 +169,7 @@ public class FastIOBenchmark {
         
         long nioTime = timeOperation(() -> {
             try {
-                return testFastIONIOMultiple(inputFile, "output2.txt");
+                testFastIONIOMultiple(inputFile, "output2.txt");
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -198,7 +198,7 @@ public class FastIOBenchmark {
         
         long originalTime = timeOperation(() -> {
             try {
-                return testFastIOOriginalMixed(inputFile, "output1.txt");
+                testFastIOOriginalMixed(inputFile, "output1.txt");
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -206,7 +206,7 @@ public class FastIOBenchmark {
         
         long nioTime = timeOperation(() -> {
             try {
-                return testFastIONIOMixed(inputFile, "output2.txt");
+                testFastIONIOMixed(inputFile, "output2.txt");
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -232,7 +232,7 @@ public class FastIOBenchmark {
         
         long originalTime = timeOperation(() -> {
             try {
-                return testFastIOOriginalOutput("output1.txt", MEDIUM_ARRAY_SIZE);
+                testFastIOOriginalOutput("output1.txt", MEDIUM_ARRAY_SIZE);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -240,7 +240,7 @@ public class FastIOBenchmark {
         
         long nioTime = timeOperation(() -> {
             try {
-                return testFastIONIOOutput("output2.txt", MEDIUM_ARRAY_SIZE);
+                testFastIONIOOutput("output2.txt", MEDIUM_ARRAY_SIZE);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -471,9 +471,14 @@ public class FastIOBenchmark {
     
     private static boolean testFastIOOriginalMixed(String inputFile, String outputFile) throws IOException {
         try (FastIO f = new FastIO(inputFile, outputFile)) {
-            while (f.hasNext()) {
-                String token = f.next();
-                f.println("Processed: " + token);
+            try {
+                while (true) {
+                    String token = f.nextLine();
+                    if (token == null || token.trim().isEmpty()) break;
+                    f.println("Processed: " + token);
+                }
+            } catch (Exception e) {
+                // End of input
             }
             return true;
         }
@@ -481,9 +486,14 @@ public class FastIOBenchmark {
     
     private static boolean testFastIONIOMixed(String inputFile, String outputFile) throws IOException {
         try (FastIONIO f = new FastIONIO(inputFile, outputFile)) {
-            while (f.hasNext()) {
-                String token = f.next();
-                f.println("Processed: " + token);
+            try {
+                while (f.hasNext()) {
+                    String token = f.nextLine();
+                    if (token == null || token.trim().isEmpty()) break;
+                    f.println("Processed: " + token);
+                }
+            } catch (Exception e) {
+                // End of input
             }
             return true;
         }
