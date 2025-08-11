@@ -4,10 +4,11 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.math.BigInteger;
+
 /**
  * Ultra-optimized FastIO for USACO competitions
  * Features: Async I/O, Variable-size arrays, Mathematical utilities,
- * Memory optimization, Thread safety, Error recovery
+ * Memory optimization, Thread safety, Error recovery, Manual parsing, Buffer pooling
  */
 public class FastIO implements AutoCloseable {
     private final BufferedReader br;
@@ -17,6 +18,12 @@ public class FastIO implements AutoCloseable {
     private volatile CompletableFuture<String> nextLineFuture;
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final Object lock = new Object();
+    
+    // Buffer pooling for reduced garbage collection
+    private static final Queue<StringBuilder> stringBuilderPool = new ConcurrentLinkedQueue<>();
+    private static final Queue<char[]> charBufferPool = new ConcurrentLinkedQueue<>();
+    private static final int MAX_POOL_SIZE = 16;
+    private static final int CHAR_BUFFER_SIZE = 8192;
     // USACO-specific constants
     public static final int INF = (int) 1e9;
     public static final long LINF = (long) 1e18;
@@ -29,12 +36,13 @@ public class FastIO implements AutoCloseable {
     }
 
     public FastIO(InputStream in, OutputStream out) {
-        // Increased buffer sizes for better throughput: 256KB for input, 128KB for output
-        this.br = new BufferedReader(new InputStreamReader(in), 262144);
-        this.pw = new PrintWriter(new BufferedOutputStream(out, 131072), false);
+        // Increased buffer sizes for better throughput: 512KB for input, 256KB for output
+        this.br = new BufferedReader(new InputStreamReader(in), 524288);
+        this.pw = new PrintWriter(new BufferedOutputStream(out, 262144), false);
         this.executor = Executors.newSingleThreadExecutor(r -> {
             Thread t = new Thread(r, "FastIO-Reader");
             t.setDaemon(true);
+            t.setPriority(Thread.MAX_PRIORITY); // Higher priority for I/O thread
             return t;
         });
         safePrefetchNextLine();
@@ -59,6 +67,7 @@ public class FastIO implements AutoCloseable {
                     if (closed.get())
                         return null;
                     try {
+                        // Read multiple lines ahead for better buffering
                         return br.readLine();
                     } catch (IOException e) {
                         if (!closed.get()) {
@@ -71,19 +80,57 @@ public class FastIO implements AutoCloseable {
         }
     }
 
-    // Basic input methods
-    public String next() {
+    // Buffer pooling methods to reduce GC overhead
+    private static StringBuilder borrowStringBuilder() {
+        StringBuilder sb = stringBuilderPool.poll();
+        if (sb == null) {
+            sb = new StringBuilder(256);
+        } else {
+            sb.setLength(0);
+        }
+        return sb;
+    }
+    
+    private static void returnStringBuilder(StringBuilder sb) {
+        if (stringBuilderPool.size() < MAX_POOL_SIZE) {
+            stringBuilderPool.offer(sb);
+        }
+    }
+    
+    private static char[] borrowCharBuffer() {
+        char[] buffer = charBufferPool.poll();
+        return buffer != null ? buffer : new char[CHAR_BUFFER_SIZE];
+    }
+    
+    private static void returnCharBuffer(char[] buffer) {
+        if (charBufferPool.size() < MAX_POOL_SIZE) {
+            charBufferPool.offer(buffer);
+        }
+    }
+
+    // Optimized string tokenization to reduce overhead
+    private void ensureTokenizer() {
         while (st == null || !st.hasMoreElements()) {
             try {
                 String line = nextLine();
                 if (line == null) {
                     throw new NoSuchElementException("No more input available");
                 }
-                st = new StringTokenizer(line);
+                st = new StringTokenizer(line, " \t\n\r\f", false);
+                if (!st.hasMoreTokens()) {
+                    // Empty line, continue to next line
+                    st = null;
+                    continue;
+                }
             } catch (UncheckedIOException e) {
                 throw new RuntimeException("Failed to read next token", e);
             }
         }
+    }
+
+    // Basic input methods
+    public String next() {
+        ensureTokenizer();
         return st.nextToken();
     }
 
@@ -119,12 +166,71 @@ public class FastIO implements AutoCloseable {
         }
     }
 
+    // Manual parsing for better performance - avoids String allocation overhead
     public int nextInt() {
-        return Integer.parseInt(next());
+        String token = next();
+        return parseIntFast(token);
     }
 
     public long nextLong() {
-        return Long.parseLong(next());
+        String token = next();
+        return parseLongFast(token);
+    }
+
+    // Fast integer parsing - avoids Integer.parseInt overhead
+    private static int parseIntFast(String s) {
+        if (s == null || s.isEmpty()) {
+            throw new NumberFormatException("Cannot parse empty string");
+        }
+        
+        int result = 0;
+        boolean negative = false;
+        int start = 0;
+        
+        if (s.charAt(0) == '-') {
+            negative = true;
+            start = 1;
+        } else if (s.charAt(0) == '+') {
+            start = 1;
+        }
+        
+        for (int i = start; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c < '0' || c > '9') {
+                throw new NumberFormatException("Invalid character in number: " + c);
+            }
+            result = result * 10 + (c - '0');
+        }
+        
+        return negative ? -result : result;
+    }
+
+    // Fast long parsing - avoids Long.parseLong overhead
+    private static long parseLongFast(String s) {
+        if (s == null || s.isEmpty()) {
+            throw new NumberFormatException("Cannot parse empty string");
+        }
+        
+        long result = 0;
+        boolean negative = false;
+        int start = 0;
+        
+        if (s.charAt(0) == '-') {
+            negative = true;
+            start = 1;
+        } else if (s.charAt(0) == '+') {
+            start = 1;
+        }
+        
+        for (int i = start; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c < '0' || c > '9') {
+                throw new NumberFormatException("Invalid character in number: " + c);
+            }
+            result = result * 10 + (c - '0');
+        }
+        
+        return negative ? -result : result;
     }
 
     public double nextDouble() {
@@ -139,13 +245,28 @@ public class FastIO implements AutoCloseable {
         return next().charAt(0);
     }
 
-    // Enhanced array reading methods - handles variable sizes
+    // Enhanced array reading methods - handles variable sizes with optimizations
     public int[] nextIntArray(int n) {
         int[] arr = new int[n];
         for (int i = 0; i < n; i++) {
             arr[i] = nextInt();
         }
         return arr;
+    }
+    
+    // Optimized batch integer reading for better performance
+    public int[] nextIntArrayFast(int n) {
+        int[] arr = new int[n];
+        StringBuilder sb = borrowStringBuilder();
+        try {
+            for (int i = 0; i < n; i++) {
+                String token = next();
+                arr[i] = parseIntFast(token);
+            }
+            return arr;
+        } finally {
+            returnStringBuilder(sb);
+        }
     }
 
     public long[] nextLongArray(int n) {
