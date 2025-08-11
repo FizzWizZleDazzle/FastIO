@@ -18,6 +18,7 @@ public class FastIO implements AutoCloseable {
     private volatile CompletableFuture<String> nextLineFuture;
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final Object lock = new Object();
+    private final boolean asyncEnabled;
     
     // Buffer pooling for reduced garbage collection
     private static final Queue<StringBuilder> stringBuilderPool = new ConcurrentLinkedQueue<>();
@@ -32,33 +33,43 @@ public class FastIO implements AutoCloseable {
     public static final int MOD2 = 998244353;
 
     public FastIO() {
-        this(System.in, System.out);
+        this(System.in, System.out, true);
     }
 
     public FastIO(InputStream in, OutputStream out) {
+        this(in, out, true);
+    }
+    
+    public FastIO(InputStream in, OutputStream out, boolean enableAsync) {
+        this.asyncEnabled = enableAsync;
         // Increased buffer sizes for better throughput: 512KB for input, 256KB for output
         this.br = new BufferedReader(new InputStreamReader(in), 524288);
         this.pw = new PrintWriter(new BufferedOutputStream(out, 262144), false);
-        this.executor = Executors.newSingleThreadExecutor(r -> {
-            Thread t = new Thread(r, "FastIO-Reader");
-            t.setDaemon(true);
-            t.setPriority(Thread.MAX_PRIORITY); // Higher priority for I/O thread
-            return t;
-        });
-        safePrefetchNextLine();
+        
+        if (enableAsync) {
+            this.executor = Executors.newSingleThreadExecutor(r -> {
+                Thread t = new Thread(r, "FastIO-Reader");
+                t.setDaemon(true);
+                t.setPriority(Thread.MAX_PRIORITY); // Higher priority for I/O thread
+                return t;
+            });
+            safePrefetchNextLine();
+        } else {
+            this.executor = null;
+        }
     }
 
     // Constructor for file-based input/output (useful for testing)
     public FastIO(String inputFile) throws IOException {
-        this(new FileInputStream(inputFile), System.out);
+        this(new FileInputStream(inputFile), System.out, false); // Disable async for file input
     }
 
     public FastIO(String inputFile, String outputFile) throws IOException {
-        this(new FileInputStream(inputFile), new FileOutputStream(outputFile));
+        this(new FileInputStream(inputFile), new FileOutputStream(outputFile), false);
     }
 
     private void safePrefetchNextLine() {
-        if (closed.get())
+        if (closed.get() || !asyncEnabled)
             return;
 
         synchronized (lock) {
@@ -141,12 +152,21 @@ public class FastIO implements AutoCloseable {
 
         try {
             String result;
-            synchronized (lock) {
-                if (nextLineFuture == null) {
-                    result = br.readLine();
-                } else {
-                    result = nextLineFuture.get(5, TimeUnit.SECONDS);
-                    safePrefetchNextLine();
+            if (!asyncEnabled) {
+                result = br.readLine();
+            } else {
+                synchronized (lock) {
+                    if (nextLineFuture == null) {
+                        result = br.readLine();
+                    } else {
+                        try {
+                            result = nextLineFuture.get(1, TimeUnit.SECONDS);
+                        } catch (TimeoutException e) {
+                            // Fallback to direct read if async times out
+                            result = br.readLine();
+                        }
+                        safePrefetchNextLine();
+                    }
                 }
             }
             return result;
@@ -159,8 +179,6 @@ public class FastIO implements AutoCloseable {
                 throw (UncheckedIOException) cause;
             }
             throw new UncheckedIOException("Async read failed", new IOException(cause));
-        } catch (TimeoutException e) {
-            throw new UncheckedIOException("Read operation timed out", new IOException(e));
         } catch (IOException e) {
             throw new UncheckedIOException("IO error during read", e);
         }
@@ -846,23 +864,27 @@ public class FastIO implements AutoCloseable {
     public void close() {
         if (closed.compareAndSet(false, true)) {
             try {
-                synchronized (lock) {
-                    if (nextLineFuture != null && !nextLineFuture.isDone()) {
-                        nextLineFuture.cancel(true);
-                    }
-                }
-
-                executor.shutdown();
-                try {
-                    if (!executor.awaitTermination(2, TimeUnit.SECONDS)) {
-                        executor.shutdownNow();
-                        if (!executor.awaitTermination(1, TimeUnit.SECONDS)) {
-                            System.err.println("FastIO executor did not terminate cleanly");
+                if (asyncEnabled) {
+                    synchronized (lock) {
+                        if (nextLineFuture != null && !nextLineFuture.isDone()) {
+                            nextLineFuture.cancel(true);
                         }
                     }
-                } catch (InterruptedException e) {
-                    executor.shutdownNow();
-                    Thread.currentThread().interrupt();
+
+                    if (executor != null) {
+                        executor.shutdown();
+                        try {
+                            if (!executor.awaitTermination(2, TimeUnit.SECONDS)) {
+                                executor.shutdownNow();
+                                if (!executor.awaitTermination(1, TimeUnit.SECONDS)) {
+                                    System.err.println("FastIO executor did not terminate cleanly");
+                                }
+                            }
+                        } catch (InterruptedException e) {
+                            executor.shutdownNow();
+                            Thread.currentThread().interrupt();
+                        }
+                    }
                 }
 
                 try {
