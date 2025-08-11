@@ -29,8 +29,9 @@ public class FastIO implements AutoCloseable {
     }
 
     public FastIO(InputStream in, OutputStream out) {
-        this.br = new BufferedReader(new InputStreamReader(in), 65536);
-        this.pw = new PrintWriter(new BufferedOutputStream(out, 65536), false);
+        // Increased buffer sizes for better throughput: 256KB for input, 128KB for output
+        this.br = new BufferedReader(new InputStreamReader(in), 262144);
+        this.pw = new PrintWriter(new BufferedOutputStream(out, 131072), false);
         this.executor = Executors.newSingleThreadExecutor(r -> {
             Thread t = new Thread(r, "FastIO-Reader");
             t.setDaemon(true);
