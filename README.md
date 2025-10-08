@@ -82,7 +82,7 @@
 
 ```
 FastIO/
-├── src/                    # Core FastIO library source
+├── src/                   # Core FastIO library source
 │   └── FastIO.java        # Main FastIO class
 ├── templates/             # Solution templates
 │   └── Solution.java      # Default template for new problems
@@ -98,8 +98,8 @@ FastIO/
 │   ├── README.md          # This file
 │   └── GETTING_STARTED.md # Beginner's guide
 ├── fastio                 # Unix/Linux/macOS utility script
-├── fastio.bat            # Windows utility script
-└── LICENSE               # MIT License
+├── fastio.bat             # Windows utility script
+└── LICENSE                # MIT License
 ```
 
 ## 🛠️ Cross-Platform Utilities
