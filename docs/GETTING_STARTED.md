@@ -8,7 +8,7 @@ FastIO is a cross-platform, high-performance Java I/O library specifically desig
 
 ## Why Use FastIO?
 
-1. **Speed**: FastIO can be 5-6x faster than Scanner for reading large inputs
+1. **Speed**: Buffered I/O is much faster than Scanner on large inputs
 2. **Cross-Platform**: Works seamlessly on Windows, macOS, and Linux
 3. **Well-Organized**: Clean project structure with templates, examples, and utilities
 4. **Simplicity**: Clean, intuitive API that's easy to learn and use
@@ -99,7 +99,6 @@ FastIO/
 │   └── Solution.java      # Default template for new problems
 ├── examples/              # Example solutions and test files
 │   ├── Example.java       # Basic usage example
-│   ├── Demo.java          # Feature demonstration
 │   ├── sample_input.txt   # Test input
 │   └── sample_output.txt  # Expected output
 ├── utils/                 # Cross-platform utilities
